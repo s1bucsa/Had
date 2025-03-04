@@ -11,9 +11,14 @@
         static List<Pixel> snakeBody = new List<Pixel>();
         static Pixel snakeHead = new Pixel();
         static int berryX, berryY;
+        static int poisonBerryX, poisonBerryY;
+        static int speedBerryX, speedBerryY;
         static ConsoleColor borderColor = ConsoleColor.Green;
         static ConsoleColor snakeColor = ConsoleColor.Yellow;
-        static ConsoleColor berryColor = ConsoleColor.Cyan;
+        static ConsoleColor berryColor = ConsoleColor.Green;
+        static ConsoleColor poisonBerryColor = ConsoleColor.Red;
+        static ConsoleColor speedBerryColor = ConsoleColor.Blue;
+        static int gameSpeed = 300;
 
         static void Main()
         {
@@ -37,7 +42,7 @@
                 HandleInput();
                 UpdateSnakePosition();
                 CheckCollisions();
-                Thread.Sleep(300);
+                Thread.Sleep(gameSpeed);
             }
             EndGame();
         }
@@ -86,6 +91,14 @@
             Console.ForegroundColor = berryColor;
             Console.SetCursorPosition(berryX, berryY);
             Console.Write("■");
+
+            Console.ForegroundColor = poisonBerryColor;
+            Console.SetCursorPosition(poisonBerryX, poisonBerryY);
+            Console.Write("■");
+
+            Console.ForegroundColor = speedBerryColor;
+            Console.SetCursorPosition(speedBerryX, speedBerryY);
+            Console.Write("■");
         }
 
         static void HandleInput()
@@ -102,13 +115,9 @@
 
         static void UpdateSnakePosition()
         {
-            // Uložení poslední části hada pro pozdější vymazání
             Pixel lastPart = snakeBody.Count > 0 ? snakeBody[0] : null;
-
-            // Přidání nové hlavy hada
             snakeBody.Add(new Pixel { X = snakeHead.X, Y = snakeHead.Y, Color = snakeColor });
 
-            // Pohyb hlavy podle směru
             switch (movement)
             {
                 case "UP": snakeHead.Y--; break;
@@ -117,14 +126,10 @@
                 case "RIGHT": snakeHead.X++; break;
             }
 
-            // Udržení délky hada odpovídající skóre
             if (snakeBody.Count > score)
             {
-                // Vymazání posledního segmentu
                 Console.SetCursorPosition(lastPart.X, lastPart.Y);
                 Console.Write(" ");
-
-                // Odstranění segmentu z listu
                 snakeBody.RemoveAt(0);
             }
         }
@@ -136,6 +141,7 @@
             {
                 isGameOver = true;
             }
+
             foreach (var part in snakeBody)
             {
                 if (part.X == snakeHead.X && part.Y == snakeHead.Y)
@@ -143,17 +149,47 @@
                     isGameOver = true;
                 }
             }
+
+            // Had snědl obyčejnou malinu (zelená)
             if (snakeHead.X == berryX && snakeHead.Y == berryY)
             {
                 score++;
+                GenerateBerry();
+            }
+
+            // Had snědl jedovatou malinu (červená) - okamžitá smrt
+            if (snakeHead.X == poisonBerryX && snakeHead.Y == poisonBerryY)
+            {
+                isGameOver = true;  // Hra končí
+            }
+
+            // Had snědl zrychlovací malinu (modrá)
+            if (snakeHead.X == speedBerryX && snakeHead.Y == speedBerryY)
+            {
+                gameSpeed = Math.Max(50, gameSpeed - 100); // Zrychlení hry, ale ne pod 50 ms
                 GenerateBerry();
             }
         }
 
         static void GenerateBerry()
         {
+            // Nejprve vymažeme staré maliny
+            Console.SetCursorPosition(berryX, berryY);
+            Console.Write(" ");
+            Console.SetCursorPosition(poisonBerryX, poisonBerryY);
+            Console.Write(" ");
+            Console.SetCursorPosition(speedBerryX, speedBerryY);
+            Console.Write(" ");
+
+            // Vygenerujeme nové pozice
             berryX = random.Next(1, screenWidth - 2);
             berryY = random.Next(1, screenHeight - 2);
+
+            poisonBerryX = random.Next(1, screenWidth - 2);
+            poisonBerryY = random.Next(1, screenHeight - 2);
+
+            speedBerryX = random.Next(1, screenWidth - 2);
+            speedBerryY = random.Next(1, screenHeight - 2);
         }
 
         static void EndGame()
