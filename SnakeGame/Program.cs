@@ -1,13 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading;
-
-namespace Snake
+﻿namespace Snake
 {
     class Program
     {
-        static int screenWidth = 32;
-        static int screenHeight = 16;
+        static int screenWidth = 64;
+        static int screenHeight = 32;
         static Random random = new Random();
         static int score = 5;
         static bool isGameOver = false;
