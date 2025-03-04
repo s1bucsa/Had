@@ -8,10 +8,12 @@
         static int score = 5;
         static bool isGameOver = false;
         static string movement = "RIGHT";
-        static List<int> snakeBodyX = new List<int>();
-        static List<int> snakeBodyY = new List<int>();
+        static List<Pixel> snakeBody = new List<Pixel>();
         static Pixel snakeHead = new Pixel();
         static int berryX, berryY;
+        static ConsoleColor borderColor = ConsoleColor.Green;
+        static ConsoleColor snakeColor = ConsoleColor.Yellow;
+        static ConsoleColor berryColor = ConsoleColor.Cyan;
 
         static void Main()
         {
@@ -21,11 +23,9 @@
 
         static void InitializeGame()
         {
-            Console.WindowHeight = screenHeight;
-            Console.WindowWidth = screenWidth;
-            snakeHead.X = screenWidth / 2;
-            snakeHead.Y = screenHeight / 2;
-            snakeHead.Color = ConsoleColor.Red;
+            Console.SetWindowSize(screenWidth, screenHeight);
+            Console.CursorVisible = false;
+            snakeHead = new Pixel { X = screenWidth / 2, Y = screenHeight / 2, Color = snakeColor };
             GenerateBerry();
         }
 
@@ -33,21 +33,26 @@
         {
             while (!isGameOver)
             {
-                Console.Clear();
-                DrawBorders();
-                DrawSnake();
-                DrawBerry();
-                CheckCollisions();
+                DrawGame();
                 HandleInput();
                 UpdateSnakePosition();
-                Thread.Sleep(500);
+                CheckCollisions();
+                Thread.Sleep(300);
             }
             EndGame();
         }
 
+        static void DrawGame()
+        {
+            Console.SetCursorPosition(0, 0);
+            DrawBorders();
+            DrawSnake();
+            DrawBerry();
+        }
+
         static void DrawBorders()
         {
-            Console.ForegroundColor = ConsoleColor.Green;
+            Console.ForegroundColor = borderColor;
             for (int i = 0; i < screenWidth; i++)
             {
                 Console.SetCursorPosition(i, 0);
@@ -69,16 +74,16 @@
             Console.ForegroundColor = snakeHead.Color;
             Console.SetCursorPosition(snakeHead.X, snakeHead.Y);
             Console.Write("■");
-            for (int i = 0; i < snakeBodyX.Count; i++)
+            foreach (var part in snakeBody)
             {
-                Console.SetCursorPosition(snakeBodyX[i], snakeBodyY[i]);
+                Console.SetCursorPosition(part.X, part.Y);
                 Console.Write("■");
             }
         }
 
         static void DrawBerry()
         {
-            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.ForegroundColor = berryColor;
             Console.SetCursorPosition(berryX, berryY);
             Console.Write("■");
         }
@@ -97,8 +102,13 @@
 
         static void UpdateSnakePosition()
         {
-            snakeBodyX.Add(snakeHead.X);
-            snakeBodyY.Add(snakeHead.Y);
+            // Uložení poslední části hada pro pozdější vymazání
+            Pixel lastPart = snakeBody.Count > 0 ? snakeBody[0] : null;
+
+            // Přidání nové hlavy hada
+            snakeBody.Add(new Pixel { X = snakeHead.X, Y = snakeHead.Y, Color = snakeColor });
+
+            // Pohyb hlavy podle směru
             switch (movement)
             {
                 case "UP": snakeHead.Y--; break;
@@ -106,10 +116,16 @@
                 case "LEFT": snakeHead.X--; break;
                 case "RIGHT": snakeHead.X++; break;
             }
-            if (snakeBodyX.Count > score)
+
+            // Udržení délky hada odpovídající skóre
+            if (snakeBody.Count > score)
             {
-                snakeBodyX.RemoveAt(0);
-                snakeBodyY.RemoveAt(0);
+                // Vymazání posledního segmentu
+                Console.SetCursorPosition(lastPart.X, lastPart.Y);
+                Console.Write(" ");
+
+                // Odstranění segmentu z listu
+                snakeBody.RemoveAt(0);
             }
         }
 
@@ -120,9 +136,9 @@
             {
                 isGameOver = true;
             }
-            for (int i = 0; i < snakeBodyX.Count; i++)
+            foreach (var part in snakeBody)
             {
-                if (snakeBodyX[i] == snakeHead.X && snakeBodyY[i] == snakeHead.Y)
+                if (part.X == snakeHead.X && part.Y == snakeHead.Y)
                 {
                     isGameOver = true;
                 }
