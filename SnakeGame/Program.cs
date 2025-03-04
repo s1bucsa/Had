@@ -13,12 +13,16 @@
         static int berryX, berryY;
         static int poisonBerryX, poisonBerryY;
         static int speedBerryX, speedBerryY;
+        static int immortalBerryX, immortalBerryY;
         static ConsoleColor borderColor = ConsoleColor.Green;
         static ConsoleColor snakeColor = ConsoleColor.Yellow;
         static ConsoleColor berryColor = ConsoleColor.Green;
         static ConsoleColor poisonBerryColor = ConsoleColor.Red;
         static ConsoleColor speedBerryColor = ConsoleColor.Blue;
+        static ConsoleColor immortalBerryColor = ConsoleColor.Magenta;
         static int gameSpeed = 300;
+        static bool isImmortal = false;
+        static DateTime immortalEndTime;
 
         static void Main()
         {
@@ -99,6 +103,10 @@
             Console.ForegroundColor = speedBerryColor;
             Console.SetCursorPosition(speedBerryX, speedBerryY);
             Console.Write("■");
+
+            Console.ForegroundColor = immortalBerryColor;
+            Console.SetCursorPosition(immortalBerryX, immortalBerryY);
+            Console.Write("■");
         }
 
         static void HandleInput()
@@ -135,53 +143,87 @@
         }
 
         static void CheckCollisions()
+{
+    // Pokud had je nesmrtelný a čas nesmrtelnosti skončil, vrátíme ho do normálního režimu
+    if (isImmortal && DateTime.Now > immortalEndTime)
+    {
+        isImmortal = false;
+    }
+
+    // Kolize s hranou – pokud není nesmrtelný, hra končí
+    if (snakeHead.X == 0 || snakeHead.X == screenWidth - 1 ||
+        snakeHead.Y == 0 || snakeHead.Y == screenHeight - 1)
+    {
+        if (!isImmortal)
         {
-            if (snakeHead.X == 0 || snakeHead.X == screenWidth - 1 ||
-                snakeHead.Y == 0 || snakeHead.Y == screenHeight - 1)
+            isGameOver = true;
+        }
+        else
+        {
+            // Had nesmí jít mimo herní pole - "odrazíme" ho zpět
+            if (snakeHead.X == 0) snakeHead.X = 1;
+            if (snakeHead.X == screenWidth - 1) snakeHead.X = screenWidth - 2;
+            if (snakeHead.Y == 0) snakeHead.Y = 1;
+            if (snakeHead.Y == screenHeight - 1) snakeHead.Y = screenHeight - 2;
+        }
+    }
+
+    // Kolize s vlastním tělem – pokud není nesmrtelný, hra končí
+    if (!isImmortal)
+    {
+        foreach (var part in snakeBody)
+        {
+            if (part.X == snakeHead.X && part.Y == snakeHead.Y)
             {
                 isGameOver = true;
             }
-
-            foreach (var part in snakeBody)
-            {
-                if (part.X == snakeHead.X && part.Y == snakeHead.Y)
-                {
-                    isGameOver = true;
-                }
-            }
-
-            // Had snědl obyčejnou malinu (zelená)
-            if (snakeHead.X == berryX && snakeHead.Y == berryY)
-            {
-                score++;
-                GenerateBerry();
-            }
-
-            // Had snědl jedovatou malinu (červená) - okamžitá smrt
-            if (snakeHead.X == poisonBerryX && snakeHead.Y == poisonBerryY)
-            {
-                isGameOver = true;  // Hra končí
-            }
-
-            // Had snědl zrychlovací malinu (modrá)
-            if (snakeHead.X == speedBerryX && snakeHead.Y == speedBerryY)
-            {
-                gameSpeed = Math.Max(50, gameSpeed - 100); // Zrychlení hry, ale ne pod 50 ms
-                GenerateBerry();
-            }
         }
+    }
+
+    // Had snědl obyčejnou malinu (zelená)
+    if (snakeHead.X == berryX && snakeHead.Y == berryY)
+    {
+        score++;
+        GenerateBerry();
+    }
+
+    // Had snědl jedovatou malinu (červená) - pokud není nesmrtelný, zemře
+    if (snakeHead.X == poisonBerryX && snakeHead.Y == poisonBerryY)
+    {
+        if (!isImmortal)
+        {
+            isGameOver = true;
+        }
+        GenerateBerry();
+    }
+
+    // Had snědl zrychlovací malinu (modrá)
+    if (snakeHead.X == speedBerryX && snakeHead.Y == speedBerryY)
+    {
+        gameSpeed = Math.Max(50, gameSpeed - 100); // Zrychlíme hru, ale ne pod 50 ms
+        GenerateBerry();
+    }
+
+    // Had snědl malinu nesmrtelnosti (fialová)
+    if (snakeHead.X == immortalBerryX && snakeHead.Y == immortalBerryY)
+    {
+        isImmortal = true;
+        immortalEndTime = DateTime.Now.AddSeconds(10); // Had je nesmrtelný na 10 sekund
+        GenerateBerry();
+    }
+}
 
         static void GenerateBerry()
         {
-            // Nejprve vymažeme staré maliny
             Console.SetCursorPosition(berryX, berryY);
             Console.Write(" ");
             Console.SetCursorPosition(poisonBerryX, poisonBerryY);
             Console.Write(" ");
             Console.SetCursorPosition(speedBerryX, speedBerryY);
             Console.Write(" ");
+            Console.SetCursorPosition(immortalBerryX, immortalBerryY);
+            Console.Write(" ");
 
-            // Vygenerujeme nové pozice
             berryX = random.Next(1, screenWidth - 2);
             berryY = random.Next(1, screenHeight - 2);
 
@@ -190,6 +232,9 @@
 
             speedBerryX = random.Next(1, screenWidth - 2);
             speedBerryY = random.Next(1, screenHeight - 2);
+
+            immortalBerryX = random.Next(1, screenWidth - 2);
+            immortalBerryY = random.Next(1, screenHeight - 2);
         }
 
         static void EndGame()
